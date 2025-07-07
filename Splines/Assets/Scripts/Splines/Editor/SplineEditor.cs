@@ -75,7 +75,7 @@ public class SplineEditor : Editor
                 if (showDirections)
                 {
                     Handles.color = Color.green;
-                    Handles.DrawLine(lineEnd, lineEnd + curve.GetDirection(j / (float)linesPerCurve, spline.transform));
+                    Handles.DrawLine(lineEnd, lineEnd + curve.GetDirection(j / (float)linesPerCurve));
                 }
                 
                 lineStart = lineEnd;
@@ -102,7 +102,7 @@ public class SplineEditor : Editor
             if (pointIndex != 0 && pointIndex != 3) return point;
             EditorGUI.BeginChangeCheck();
 
-            Vector3 direction = curve.GetDirection(pointIndex == 0 ? 0 : 1, spline.transform);
+            Vector3 direction = curve.GetDirection(pointIndex == 0 ? 0 : 1);
             Quaternion currentRotation = Quaternion.AngleAxis(pointIndex == 0 ? curve.angles[0] : curve.angles[1], direction);
             Quaternion newRotation = Handles.Disc(currentRotation, point, direction, 1, false, 0);
 
@@ -217,6 +217,8 @@ public class SplineEditor : Editor
                     splineMesh.SetComponentReferences();
                     splineMesh.GenerateMesh();
                 }
+
+                curve.CalculateDistanceLUT();
             }
         }
         

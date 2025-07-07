@@ -17,6 +17,8 @@ public class SplineMeshEditor : Editor
         EditorGUILayout.LabelField("Editor Settings", EditorStyles.boldLabel);
 
         showDebugSpheres = EditorGUILayout.Toggle("Show Debug Spheres", showDebugSpheres);
+        
+        EditorGUILayout.Space();
 
         if (GUILayout.Button("Generate Mesh"))
         {

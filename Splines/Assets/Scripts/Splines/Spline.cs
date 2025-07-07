@@ -10,4 +10,9 @@ public class Spline : MonoBehaviour
     public bool Mirrored { get { return mirrored; } }
 
     public List<BezierCurve> curves = new();
+
+    void Awake()
+    {
+        foreach (BezierCurve curve in curves) curve.CalculateDistanceLUT();
+    }
 }

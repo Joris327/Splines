@@ -10,7 +10,7 @@ public class SplineMesh : MonoBehaviour
     MeshFilter meshFilter;
     MeshRenderer meshRenderer;
     
-    public List<Vector3> vertices;
+    [HideInInspector] public List<Vector3> vertices;
 
     public PhysicsMaterial physicsMaterial;
     [SerializeField, Min(2)] float vertexResolution = 10;
@@ -111,7 +111,7 @@ public class SplineMesh : MonoBehaviour
         progress = Mathf.Clamp01(progress);
         progress = -(Mathf.Cos(Mathf.PI * progress) - 1) / 2; //smooth out the curve
         
-        Vector3 direction = curve.GetDirection(progress, transform);
+        Vector3 direction = curve.GetDirection(progress);
         
         float interpolatedAngle = Mathf.LerpAngle(curve.angles[0], curve.angles[1], progress);
         
