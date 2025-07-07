@@ -10,13 +10,11 @@ public class SplineMesh : MonoBehaviour
     MeshFilter meshFilter;
     MeshRenderer meshRenderer;
     
-    List<Vector3> vertices;
+    public List<Vector3> vertices;
 
     public PhysicsMaterial physicsMaterial;
     [SerializeField, Min(2)] float vertexResolution = 10;
     [SerializeField] float roadWidth = 1;
-    
-    enum Axis { x, y, z }
     
     public bool GenerateMeshOnEdit = false;
 
@@ -111,7 +109,7 @@ public class SplineMesh : MonoBehaviour
     void AddVertexes(Vector3 centrePoint, BezierCurve curve, float progress, List<Vector2> uv)
     {
         progress = Mathf.Clamp01(progress);
-        progress = -(Mathf.Cos(Mathf.PI * progress) - 1) / 2;
+        progress = -(Mathf.Cos(Mathf.PI * progress) - 1) / 2; //smooth out the curve
         
         Vector3 direction = curve.GetDirection(progress, transform);
         
@@ -128,26 +126,4 @@ public class SplineMesh : MonoBehaviour
         vertices.Add(vertex2);
         uv.Add(new(1, progress));
     }
-    
-    Axis BiggestAxis (Vector3 input)
-    {
-        if (input.x > input.y && input.x > input.z) return Axis.x;
-        if (input.y > input.x && input.y > input.z) return Axis.y;
-        if (input.z > input.x && input.z > input.y) return Axis.z;
-        return Axis.z;
-    }
-    
-    private void OnDrawGizmos ()
-    {
-        if (vertices == null)
-        {
-			return;
-		}
-        
-		Gizmos.color = Color.black;
-		for (int i = 0; i < vertices.Count; i++)
-        {
-			Gizmos.DrawSphere(vertices[i] + transform.position, 0.1f);
-		}
-	}
 }

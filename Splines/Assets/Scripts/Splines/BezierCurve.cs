@@ -1,3 +1,4 @@
+using Unity.Mathematics;
 using UnityEngine;
 
 [System.Serializable]
@@ -82,7 +83,7 @@ public class BezierCurve
         
         //method 3 ---------------------------------------------------------------------------------------------------------------
         
-        Vector4 powersOfT = new(1, timeStamp, Mathf.Pow(timeStamp, 2), Mathf.Pow(timeStamp, 3));
+        float4 powersOfT = new(1, timeStamp, math.pow(timeStamp, 2), math.pow(timeStamp, 3));
         
         Vector3 worldPoint0 = points[0] + position;
         Vector3 worldPoint1 = points[1] + position;

@@ -8,15 +8,22 @@ public class SplineEditor : Editor
 	const float pickSize = 0.06f;
 	
 	int selectedIndex = -1;
+    
+    int linesPerCurve = 15;
+    bool showDirections = false;
 
     public override void OnInspectorGUI()
     {
-        DrawDefaultInspector();
-
         Spline spline = target as Spline;
+        
+        DrawDefaultInspector();
+        
+        EditorGUILayout.Space();
+        
+        EditorGUILayout.LabelField("Editor Settings", EditorStyles.boldLabel);
 
-        //EditorGUILayout.IntField("Lines per Curve", linesPerCurve);
-        //EditorGUILayout.Toggle("Show Direction", showDirection);
+        linesPerCurve = EditorGUILayout.IntField("Lines Per Curve", linesPerCurve);
+        showDirections = EditorGUILayout.Toggle("Show Directions", showDirections);
 
         EditorGUILayout.Space();
 
@@ -29,27 +36,6 @@ public class SplineEditor : Editor
         {
             spline.curves.RemoveAt(spline.curves.Count - 1);
             SceneView.RepaintAll();
-        }
-        
-        EditorGUILayout.Space();
-        
-        SplineMesh splineMesh = spline.GetComponent<SplineMesh>();
-        if (splineMesh)
-        {
-            if (GUILayout.Button("Generate Mesh"))
-            {
-                splineMesh.SetComponentReferences();
-                splineMesh.GenerateMesh();
-                SceneView.RepaintAll();
-            }
-            if (GUILayout.Button("Update Collider"))
-            {
-                MeshCollider meshCollider = splineMesh.GetComponent<MeshCollider>();
-                if (meshCollider) DestroyImmediate(meshCollider);
-                meshCollider = splineMesh.gameObject.AddComponent<MeshCollider>();
-                meshCollider.material = splineMesh.physicsMaterial;
-            }
-            //EditorGUILayout.Toggle("Generate Mesh On Edit", GenerateMeshOnEdit);
         }
     }
     
@@ -78,18 +64,18 @@ public class SplineEditor : Editor
             //Handles.DrawBezier(point0, point3, point1, point2, Color.white, Texture2D.whiteTexture, 1);
 
             Vector3 lineStart = curve.points[0] + spline.transform.position;
-            for (int j = 0; j <= spline.linesPerCurve; j++)
+            for (int j = 0; j <= linesPerCurve; j++)
             {
                 //draw spline itself
                 Handles.color = Color.white;
-                Vector3 lineEnd = spline.curves[i].CalculatePointOnCurve(j / (1f * spline.linesPerCurve), spline.transform.position);
+                Vector3 lineEnd = spline.curves[i].CalculatePointOnCurve(j / (float)linesPerCurve, spline.transform.position);
                 Handles.DrawLine(spline.transform.TransformDirection(lineStart), spline.transform.TransformDirection(lineEnd));
 
                 //draw direction
-                if (spline.showDirection)
+                if (showDirections)
                 {
                     Handles.color = Color.green;
-                    Handles.DrawLine(lineEnd, lineEnd + curve.GetDirection(j / (float)spline.linesPerCurve, spline.transform));
+                    Handles.DrawLine(lineEnd, lineEnd + curve.GetDirection(j / (float)linesPerCurve, spline.transform));
                 }
                 
                 lineStart = lineEnd;
