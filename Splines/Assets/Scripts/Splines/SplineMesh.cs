@@ -71,7 +71,7 @@ public class SplineMesh : MonoBehaviour
             triangles.Add(i + 3);
         }
 
-        if (spline.Loop)
+        if (spline.Looping)
         {
             triangles.Add(vertices.Count - 2);
             triangles.Add(0);
@@ -111,23 +111,14 @@ public class SplineMesh : MonoBehaviour
     void AddVertexes(Vector3 centrePoint, BezierCurve curve, float progress, List<Vector2> uv)
     {
         progress = Mathf.Clamp01(progress);
+        progress = -(Mathf.Cos(Mathf.PI * progress) - 1) / 2;
+        
         Vector3 direction = curve.GetDirection(progress, transform);
-        //Vector3 direction = curve.CalculatePointOnCurve(progress + 1 / vertexResolution, transform.position) - centrePoint;
-        //direction.Normalize();
-
+        
         float interpolatedAngle = Mathf.LerpAngle(curve.angles[0], curve.angles[1], progress);
-        //float interpolatedAngle = ((curve.angles[0] + curve.angles[1]) / 2) * progress;
-        if (progress == 0.5f) Debug.Log(interpolatedAngle);
-        Vector3 angleDir = direction; //forward
         
-        //angleDir = Quaternion.Euler(0, -90, 0) * angleDir; //90 degrees along global y axis
-        angleDir = Quaternion.AngleAxis(90, new(-direction.z, direction.y, direction.x)) * angleDir; //rotate 90 degrees left along local y axis
-        
-        angleDir = Quaternion.AngleAxis(interpolatedAngle, direction) * angleDir; //X degrees along local z axis
-        //angleDir = interpolatedAngle * angleDir;
-        
-        Vector3 cross = Vector3.Cross(direction, angleDir.normalized).normalized;
-        //cross = Vector3.Cross(cross, direction).normalized;
+        Vector3 cross = Vector3.Cross(direction, Vector3.up).normalized;
+        cross = Quaternion.AngleAxis(interpolatedAngle, direction) * cross;
         
         Vector3 vertex1 = centrePoint + (cross * roadWidth);
         Vector3 vertex2 = centrePoint - (cross * roadWidth);

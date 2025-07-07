@@ -56,5 +56,5 @@
         "temp/": true,
         "Temp/": true
     },
-    "dotnet.defaultSolution": "PB_Splines.sln"
+    "dotnet.defaultSolution": "Splines.sln"
 }
