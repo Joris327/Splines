@@ -58,85 +58,23 @@ public class BezierCurve
         return GetVelocity(t, splineTransform).normalized;
     }
     
-    public Vector3 CalculatePointOnCurve(float timeStamp, Vector3 position)
+    public Vector3 CalculatePointOnCurve(float timeStamp, Vector3 transformWorldPos)
     {
         timeStamp = Mathf.Clamp01(timeStamp);
         
-        //method 1 ---------------------------------------------------------------------------------------------------------------
-        
-        // Vector3 tempPoint1 = Vector3.Lerp(points[0], points[1], timeStamp);
-        // Vector3 tempPoint2 = Vector3.Lerp(points[2], points[3], timeStamp);
-        // Vector3 tempPoint3 = Vector3.Lerp(points[3], points[4], timeStamp);
-        
-        // Vector3 tempPoint4 = Vector3.Lerp(tempPoint1, tempPoint2, timeStamp);
-        // Vector3 tempPoint5 = Vector3.Lerp(tempPoint2, tempPoint3, timeStamp);
-        
-        // return Vector3.Lerp(tempPoint4, tempPoint5, timeStamp);
-        
-        //method 2 ---------------------------------------------------------------------------------------------------------------
-        
-        // return 
-        //     points[0] * (Mathf.Pow(-timeStamp, 3) + (3 * Mathf.Pow(timeStamp, 2)) - (3 * timeStamp) + 1) +
-        //     points[1] * (3 * Mathf.Pow(timeStamp, 3) - (6 * Mathf.Pow(timeStamp, 2)) + (3 * timeStamp)) +
-        //     points[2] * (-3 * Mathf.Pow(timeStamp, 3) + (3 * Mathf.Pow(timeStamp, 2))) +
-        //     points[3] * Mathf.Pow(timeStamp, 3);
-        
-        //method 3 ---------------------------------------------------------------------------------------------------------------
-        
         float4 powersOfT = new(1, timeStamp, math.pow(timeStamp, 2), math.pow(timeStamp, 3));
+
+        float4 polynomial = math.mul(characteristicMatrix, powersOfT);
         
-        Vector3 worldPoint0 = points[0] + position;
-        Vector3 worldPoint1 = points[1] + position;
-        Vector3 worldPoint2 = points[2] + position;
-        Vector3 worldPoint3 = points[3] + position;
+        float4 worldPoint0 = new(points[0], 0);
+        float4 worldPoint1 = new(points[1], 0);
+        float4 worldPoint2 = new(points[2], 0);
+        float4 worldPoint3 = new(points[3], 0);
 
-        float[,] pointMatrix = {
-            { worldPoint0.x, worldPoint0.y, worldPoint0.z },
-            { worldPoint1.x, worldPoint1.y, worldPoint1.z },
-            { worldPoint2.x, worldPoint2.y, worldPoint2.z },
-            { worldPoint3.x, worldPoint3.y, worldPoint3.z },
-        };
-
-        // float4x3 pointMatrix = new(
-        //     worldPoint0.x, worldPoint0.y, worldPoint0.z,
-        //     worldPoint1.x, worldPoint1.y, worldPoint1.z,
-        //     worldPoint2.x, worldPoint2.y, worldPoint2.z,
-        //     worldPoint3.x, worldPoint3.y, worldPoint3.z
-        // );
-
-        float[,] positionMatrix = {
-            {
-                Vector4.Dot(new(characteristicMatrix[0,0], characteristicMatrix[1,0], characteristicMatrix[2,0], characteristicMatrix[3,0]), new(pointMatrix[0,0], pointMatrix[1,0], pointMatrix[2,0], pointMatrix[3,0])),
-                Vector4.Dot(new(characteristicMatrix[0,0], characteristicMatrix[1,0], characteristicMatrix[2,0], characteristicMatrix[3,0]), new(pointMatrix[0,1], pointMatrix[1,1], pointMatrix[2,1], pointMatrix[3,1])),
-                Vector4.Dot(new(characteristicMatrix[0,0], characteristicMatrix[1,0], characteristicMatrix[2,0], characteristicMatrix[3,0]), new(pointMatrix[0,2], pointMatrix[1,2], pointMatrix[2,2], pointMatrix[3,2]))
-            },
-            {
-                Vector4.Dot(new(characteristicMatrix[0,1], characteristicMatrix[1,1], characteristicMatrix[2,1], characteristicMatrix[3,1]), new(pointMatrix[0,0], pointMatrix[1,0], pointMatrix[2,0], pointMatrix[3,0])),
-                Vector4.Dot(new(characteristicMatrix[0,1], characteristicMatrix[1,1], characteristicMatrix[2,1], characteristicMatrix[3,1]), new(pointMatrix[0,1], pointMatrix[1,1], pointMatrix[2,1], pointMatrix[3,1])),
-                Vector4.Dot(new(characteristicMatrix[0,1], characteristicMatrix[1,1], characteristicMatrix[2,1], characteristicMatrix[3,1]), new(pointMatrix[0,2], pointMatrix[1,2], pointMatrix[2,2], pointMatrix[3,2]))
-            },
-            {
-                Vector4.Dot(new(characteristicMatrix[0,2], characteristicMatrix[1,2], characteristicMatrix[2,2], characteristicMatrix[3,2]), new(pointMatrix[0,0], pointMatrix[1,0], pointMatrix[2,0], pointMatrix[3,0])),
-                Vector4.Dot(new(characteristicMatrix[0,2], characteristicMatrix[1,2], characteristicMatrix[2,2], characteristicMatrix[3,2]), new(pointMatrix[0,1], pointMatrix[1,1], pointMatrix[2,1], pointMatrix[3,1])),
-                Vector4.Dot(new(characteristicMatrix[0,2], characteristicMatrix[1,2], characteristicMatrix[2,2], characteristicMatrix[3,2]), new(pointMatrix[0,2], pointMatrix[1,2], pointMatrix[2,2], pointMatrix[3,2]))
-            },
-            {
-                Vector4.Dot(new(characteristicMatrix[0,3], characteristicMatrix[1,3], characteristicMatrix[2,3], characteristicMatrix[3,3]), new(pointMatrix[0,0], pointMatrix[1,0], pointMatrix[2,0], pointMatrix[3,0])),
-                Vector4.Dot(new(characteristicMatrix[0,3], characteristicMatrix[1,3], characteristicMatrix[2,3], characteristicMatrix[3,3]), new(pointMatrix[0,1], pointMatrix[1,1], pointMatrix[2,1], pointMatrix[3,1])),
-                Vector4.Dot(new(characteristicMatrix[0,3], characteristicMatrix[1,3], characteristicMatrix[2,3], characteristicMatrix[3,3]), new(pointMatrix[0,2], pointMatrix[1,2], pointMatrix[2,2], pointMatrix[3,2]))
-            }
-        };
-
-        //float4x3 positionMatrix = math.mul(characteristicMatrix, pointMatrix);
-
-        Vector3 returnValue = new(
-            Vector4.Dot(powersOfT, new(positionMatrix[0,0], positionMatrix[1,0], positionMatrix[2,0], positionMatrix[3,0])),
-            Vector4.Dot(powersOfT, new(positionMatrix[0,1], positionMatrix[1,1], positionMatrix[2,1], positionMatrix[3,1])),
-            Vector4.Dot(powersOfT, new(positionMatrix[0,2], positionMatrix[1,2], positionMatrix[2,2], positionMatrix[3,2]))
-        );
-
-        //Vector3 returnValue = math.mul(powersOfT, positionMatrix);
+        float4x4 pointMatrix = new(worldPoint0, worldPoint1, worldPoint2, worldPoint3);
         
-        return returnValue;
+        float4 result = math.mul(pointMatrix, polynomial);
+
+        return new Vector3(result.x, result.y, result.z) + transformWorldPos;
     }
 }
