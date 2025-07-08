@@ -27,7 +27,7 @@ public class SplineMesh : MonoBehaviour
     {
         if (!TryGetComponent(out spline)) Debug.LogError(name + ": could not find Spline component.");
         if (!TryGetComponent(out meshFilter)) Debug.LogError(name + ": could not find MeshFilter component.");
-        if (!TryGetComponent(out meshRenderer)) Debug.LogError(name + " could find MeshRenderer component.");
+        if (!TryGetComponent(out meshRenderer)) Debug.LogError(name + ": could find MeshRenderer component.");
     }
     
     public void GenerateMesh()
@@ -123,6 +123,7 @@ public class SplineMesh : MonoBehaviour
         
         vertices.Add(vertex1);
         uv.Add(new(0, progress));
+        
         vertices.Add(vertex2);
         uv.Add(new(1, progress));
     }

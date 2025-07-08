@@ -12,7 +12,7 @@ public class BezierCurve
     };
 
     [SerializeField] int distanceSamplesAmount = 10;
-    
+
     public float ArcLength => distanceLUT[^1];
 
     /// <summary>
@@ -124,7 +124,7 @@ public class BezierCurve
         for (int i = 1; i < distanceSamplesAmount; i++)
         {
             float t = (float)i / (distanceSamplesAmount - 1);
-            
+
             distanceSamples[i] = CalculatePointOnCurve(t, Vector3.zero);
 
             float pointDelta = (distanceSamples[i] - distanceSamples[i - 1]).magnitude;
@@ -137,19 +137,34 @@ public class BezierCurve
     {
         if (distance <= 0) return 0;
 
-        float sampleAmount = distanceLUT.Length;
-        for (int i = 0; i < sampleAmount - 1; i++)
+        int sampleAmount = distanceLUT.Length - 1;
+        for (int i = 0; i < sampleAmount; i++)
         {
             float lowerDistance = distanceLUT[i];
             float upperDistance = distanceLUT[i + 1];
             if (distance > lowerDistance && distance <= upperDistance)
             {
-                float t = (distance - lowerDistance) / (upperDistance - lowerDistance);
-                
-                return (i / (sampleAmount-1)) + (t * (1 / sampleAmount));
+                float midPoint = (distance - lowerDistance) / (upperDistance - lowerDistance);
+
+                return ((float)i / sampleAmount) + (midPoint * (1f / sampleAmount));
             }
         }
-        
+
         return 1;
+    }
+
+    public float GetDistanceFromT(float t)
+    {
+        if (t <= 0) return 0;
+        if (t >= 1) return ArcLength;
+        
+        int sampleAmount = distanceLUT.Length - 1;
+        int index = (int)(t * sampleAmount);
+        
+        float minDistance = distanceLUT[index];
+        float maxDistance = distanceLUT[index + 1];
+        float midPoint = (t * sampleAmount) % 1;
+
+        return Mathf.Lerp(minDistance, maxDistance, midPoint);
     }
 }
