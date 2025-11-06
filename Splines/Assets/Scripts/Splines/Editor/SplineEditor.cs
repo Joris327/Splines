@@ -2,6 +2,7 @@ using UnityEditor;
 using UnityEngine;
 
 [CustomEditor(typeof(Spline))]
+[CanEditMultipleObjects]
 public class SplineEditor : Editor
 {
     const float handleSize = 0.04f;
@@ -9,8 +10,8 @@ public class SplineEditor : Editor
 	
 	int selectedIndex = -1;
     
-    int linesPerCurve = 15;
-    bool showDirections = false;
+    static int linesPerCurve = 15;
+    static bool showDirections = false;
 
     public override void OnInspectorGUI()
     {
@@ -83,13 +84,16 @@ public class SplineEditor : Editor
         }
     }
     
+    
+    
     Vector3 ShowPoint(int pointIndex, int curveIndex, Spline spline, BezierCurve curve, Transform handleTransform, Quaternion handleRotation)
     {
         Vector3 point = handleTransform.TransformPoint(curve.points[pointIndex]);
         Vector3 oldPoint = point;
+        
         float size = HandleUtility.GetHandleSize(point);
         Handles.color = Color.white;
-
+        
         if (Handles.Button(point, handleRotation, size * handleSize, size * pickSize, Handles.DotHandleCap))
         {
             selectedIndex = pointIndex + curveIndex * 4;
@@ -152,23 +156,24 @@ public class SplineEditor : Editor
         else if (Tools.current == Tool.Move)
         {
             EditorGUI.BeginChangeCheck();
+            
             point = Handles.DoPositionHandle(point, handleRotation);
 
             if (EditorGUI.EndChangeCheck())
             {
-                Undo.RecordObject(spline, "Move point");
-                EditorUtility.SetDirty(spline);
+                //Undo.RecordObject(spline, "Move point");
+                //EditorUtility.SetDirty(spline);
                 curve.points[pointIndex] = handleTransform.InverseTransformPoint(point);
 
-                if (pointIndex == 0 && curveIndex > 0)
+                if (pointIndex == 0 && curveIndex > 0) //move endpoint from previous curve to your position.
                 {
                     spline.curves[curveIndex - 1].points[3] = handleTransform.InverseTransformPoint(point);
                 }
-                else if (pointIndex == 3 && curveIndex < spline.curves.Count - 1)
+                else if (pointIndex == 3 && curveIndex < spline.curves.Count - 1) //move startpoint from next curve to your position.
                 {
                     spline.curves[curveIndex + 1].points[0] = handleTransform.InverseTransformPoint(point);
                 }
-                else if (spline.Looping)
+                else if (spline.Looping) //if looping: move point at the other end of spline to your position.
                 {
                     if (curveIndex == 0 && pointIndex == 0) spline.curves[^1].points[3] = handleTransform.InverseTransformPoint(point);
                     else if (curveIndex == spline.curves.Count - 1 && pointIndex == 3) spline.curves[0].points[0] = handleTransform.InverseTransformPoint(point);

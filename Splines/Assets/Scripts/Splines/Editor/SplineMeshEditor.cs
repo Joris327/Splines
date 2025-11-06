@@ -39,12 +39,12 @@ public class SplineMeshEditor : Editor
     {
         SplineMesh splineMesh = target as SplineMesh;
 
-        if (showDebugSpheres && splineMesh.vertices != null)
-        {
-            foreach (Vector3 vertex in splineMesh.vertices)
-            {
-                Handles.DrawSolidDisc(vertex, Vector3.up, 0.1f);
-            }
-        }
+        // if (showDebugSpheres && splineMesh.vertices != null)
+        // {
+        //     foreach (Vector3 vertex in splineMesh.vertices)
+        //     {
+        //         Handles.DrawSolidDisc(vertex, Vector3.up, 0.1f);
+        //     }
+        // }
     }
 }

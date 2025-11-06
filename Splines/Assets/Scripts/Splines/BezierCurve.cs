@@ -13,7 +13,16 @@ public class BezierCurve
 
     [SerializeField] int distanceSamplesAmount = 10;
 
-    public float ArcLength => distanceLUT[^1];
+    //public float ArcLength => distanceLUT[^1];
+    public float ArcLength
+    {
+        get
+        {
+            //if (distanceLUT == null) CalculateDistanceLUT();
+            CalculateDistanceLUT();
+            return distanceLUT[^1];
+        }
+    }
 
     /// <summary>
     /// Lookup table for distance to t-value
@@ -78,6 +87,7 @@ public class BezierCurve
     /// <summary>
     /// Calculates the osculating circle, or the curvature at that point.
     /// </summary>
+    /// <returns>The amount of curvature at a certain point of the spline, where higher values represent a tighter curve, and 0 no curvature at all.</returns>
     public float GetCurvature(float t)
     {
         Vector3 velocity = GetVelocity(t);
@@ -87,19 +97,26 @@ public class BezierCurve
 
         float numerator = Vector3.Cross(velocity, GetAcceleration(t)).magnitude;
 
-        return Mathf.Pow(numerator / denominator, -1);
+        return numerator / denominator; //Mathf.Pow(numerator / denominator, -1);
     }
+    
+    /// <summary>
+    /// Calculates the radius of the osculating curve.
+    /// </summary>
+    public float GetRadius(float t) => Mathf.Pow(GetCurvature(t), -1);
 
-    public Vector3 CalculatePointOnCurve(float t, Vector3 transformWorldPos)
+    public Vector3 CalculatePointOnCurve(float t)
     {
         t = Mathf.Clamp01(t);
 
         Vector4 powersOfT = new(1, t, Mathf.Pow(t, 2), Mathf.Pow(t, 3));
 
-        return Derivative(powersOfT, transformWorldPos);
+        return Derivative(powersOfT);
     }
 
-    Vector3 Derivative(Vector4 powersOfT, Vector3 transformWorldPos)
+    public Vector3 CalculatePointOnCurve(float t, Vector3 transformWorldPos) => CalculatePointOnCurve(t) + transformWorldPos;
+
+    Vector3 Derivative(Vector4 powersOfT)
     {
         Vector4 polynomial = characteristicMatrix * powersOfT;
 
@@ -112,8 +129,10 @@ public class BezierCurve
 
         Vector4 result = pointMatrix * polynomial;
 
-        return new Vector3(result.x, result.y, result.z) + transformWorldPos;
+        return new Vector3(result.x, result.y, result.z);
     }
+
+    Vector3 Derivative(Vector4 powersOfT, Vector3 transformWorldPos) => Derivative(powersOfT) + transformWorldPos;
 
     public void CalculateDistanceLUT()
     {
