@@ -14,24 +14,6 @@ public class Spline : MonoBehaviour
     void Awake()
     {
         foreach (BezierCurve curve in curves) curve.CalculateDistanceLUT();
-
-        // for (int i = 0; i < 10; i++) Debug.Log(curves[0].GetCurvature(i / 10f));
-
-        // Debug.Log("---");
-
-        // for (int i = 0; i < 10; i++) Debug.Log(curves[0].GetRadius(i / 10f));
-
-        // Debug.Log("---");
-
-        // Vector3 prevVel = curves[0].GetVelocity(0);
-        // for (int i = 1; i < 10; i++)
-        // {
-        //     Vector3 vel = curves[0].GetVelocity(i / 10f);
-        //     //Vector3 normal = Vector3.Cross(vel, Vector3.up);
-        //     //Debug.Log(vel + " - " + Vector3.Cross(vel, Vector3.up));
-        //     Debug.Log(SignedAngleBetween(vel, prevVel));
-        //     prevVel = vel;
-        // }
     }
     
     public void MovePointOnCurveTo(Vector3 localPos, int curveIndex, int pointIndex)

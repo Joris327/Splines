@@ -27,4 +27,10 @@ public struct CurveAngles
             }
         }
     }
+    
+    public CurveAngles(float firstAngle, float secondAngle)
+    {
+        angle0 = firstAngle;
+        angle1 = secondAngle;
+    }
 }

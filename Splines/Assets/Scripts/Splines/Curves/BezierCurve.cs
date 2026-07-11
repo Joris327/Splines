@@ -3,14 +3,8 @@ using UnityEngine;
 [System.Serializable]
 public class BezierCurve
 {
-    // Vector3[] points = {
-    //     new(0, 0, 0), new(1, 0, 0), new(2, 0, 0), new(3, 0, 0)
-    // };
-    
     public Vector3 this[int index]
     {
-        //get => points[index];
-        //set => points[index] = value;
         get
         {
             return index switch
@@ -39,10 +33,6 @@ public class BezierCurve
     public Vector3 point1 = new(1, 0, 0);
     public Vector3 point2 = new(2, 0, 0);
     public Vector3 point3 = new(3, 0, 0);
-
-    // [NonReorderable] public float[] angles = {
-    //     new(), new()
-    // };
     
     public CurveAngles angles = new();
 
@@ -78,26 +68,16 @@ public class BezierCurve
         point1 = pPoint1;
         point2 = pPoint2;
         point3 = pPoint3;
-        
-        // angles = new float[] {
-        //     0, 0
-        // };
     }
 
-    public BezierCurve(Vector3 anchor)
+    public BezierCurve(Vector3 origin, CurveAngles startingAngles)
     {
-        // points = new Vector3[] {
-        //     anchor, anchor + new Vector3(1, 0, 0), anchor + new Vector3(2, 0, 0), anchor + new Vector3(3, 0, 0)
-        // };
+        point0 = origin + new Vector3(0, 0, 0);
+        point1 = origin + new Vector3(1, 0, 0);
+        point2 = origin + new Vector3(2, 0, 0);
+        point3 = origin + new Vector3(3, 0, 0);
         
-        point0 = anchor + new Vector3(0, 0, 0);
-        point1 = anchor + new Vector3(1, 0, 0);
-        point2 = anchor + new Vector3(2, 0, 0);
-        point3 = anchor + new Vector3(3, 0, 0);
-
-        // angles = new float[] {
-        //     0, 0
-        // };
+        angles = startingAngles;
     }
 
     /// <summary>
@@ -231,56 +211,3 @@ public class BezierCurve
         return Mathf.Lerp(minDistance, maxDistance, midPoint);
     }
 }
-
-//#if UNITY_EDITOR
-// [CustomPropertyDrawer(typeof(BezierCurve))]
-// public class BezierCurveDrawerUIE : PropertyDrawer
-// {
-//     public override VisualElement CreatePropertyGUI(SerializedProperty property)
-//     {
-//         var container = new VisualElement();
-        
-//         //container.Add(new PropertyField(property.FindPropertyRelative("points"), "Test"));
-//         container.Add(new PropertyField(property.FindPropertyRelative("point0")));
-//         container.Add(new PropertyField(property.FindPropertyRelative("point1")));
-//         container.Add(new PropertyField(property.FindPropertyRelative("point2")));
-//         container.Add(new PropertyField(property.FindPropertyRelative("point3")));
-//         container.Add(new PropertyField(property.FindPropertyRelative("angles")));
-        
-//         return container;
-//     }
-// }
-
-// [CustomPropertyDrawer(typeof(BezierCurve))]
-// public class BezierCurveDrawer : PropertyDrawer
-// {
-//     public override void OnGUI(Rect position, SerializedProperty property, GUIContent label)
-//     {
-//         // Using BeginProperty / EndProperty on the parent property means that
-//         // prefab override logic works on the entire property.
-//         EditorGUI.BeginProperty(position, label, property);
-        
-//         // Draw label
-//         position = EditorGUI.PrefixLabel(position, GUIUtility.GetControlID(FocusType.Passive), label);
-        
-//         // Don't make child fields be indented
-//         int indent = EditorGUI.indentLevel;
-//         EditorGUI.indentLevel = 0;
-
-//         // Calculate rects
-//         Rect position1 = new(position.x, position.y + 30, position.width, position.height);
-//         Rect position2 = new(position.x, position.y + 60, position.width, position.height);
-//         Rect position3 = new(position.x, position.y + 90, position.width, position.height);
-//         //Rect unitRect = new(position.x + 35, position.y, 50, position.height);
-//         //Rect nameRect = new(position.x + 90, position.y, position.width - 90, position.height);
-        
-//         EditorGUI.PropertyField(position,  property.FindPropertyRelative("point0"));
-//         EditorGUI.PropertyField(position1, property.FindPropertyRelative("point1"));
-//         EditorGUI.PropertyField(position2, property.FindPropertyRelative("point2"));
-//         EditorGUI.PropertyField(position3, property.FindPropertyRelative("point3"));
-        
-//         EditorGUI.indentLevel = indent;
-//         EditorGUI.EndProperty();
-//     }
-// }
-// #endif

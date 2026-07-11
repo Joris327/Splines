@@ -5,20 +5,6 @@ using UnityEngine;
 //[CanEditMultipleObjects]
 public class SplineEditor : Editor
 {
-    //public VisualTreeAsset m_InspectorUXML;
-    // public override VisualElement CreateInspectorGUI()
-    // {
-    //     VisualElement container = new();
-        
-    //     if (m_InspectorUXML != null)
-    //      {
-    //         VisualElement uxmlContent = m_InspectorUXML.CloneTree();
-    //         container.Add(uxmlContent);
-    //      }
-        
-    //     return container;
-    // }
-    
     const float handleSize = 0.04f;
 	const float pickSize = 0.06f;
 	
@@ -38,7 +24,6 @@ public class SplineEditor : Editor
         SerializedProperty mirrored = serializedObject.FindProperty("mirrored");
         EditorGUILayout.PropertyField(mirrored);
         
-        //EditorGUILayout.PropertyField(serializedObject.FindProperty("curves"));
         curvesFoldoutStatus = EditorGUILayout.Foldout(curvesFoldoutStatus, "Curves");
         if (curvesFoldoutStatus)
         {
@@ -54,10 +39,6 @@ public class SplineEditor : Editor
             GUI.enabled = true;
             EditorGUI.indentLevel--;
         }
-        //EditorGUILayout.fold
-        //EditorGUILayout.BeginFoldoutHeaderGroup
-        
-        //DrawDefaultInspector();
         
         EditorGUILayout.Space();
         
@@ -70,7 +51,8 @@ public class SplineEditor : Editor
 
         if (GUILayout.Button("Add Curve"))
         {
-            spline.curves.Add(new(spline.curves.Count > 0 ? spline.curves[^1][3] : new Vector3()));
+            CurveAngles angles = spline.curves.Count > 0 ? spline.curves[^1].angles : new();
+            spline.curves.Add(new BezierCurve(spline.curves.Count > 0 ? spline.curves[^1][3] : new Vector3(), angles));
             SceneView.RepaintAll();
         }
         if (GUILayout.Button("Remove Curve") && spline.curves.Count > 0)
@@ -103,8 +85,6 @@ public class SplineEditor : Editor
             Handles.DrawLine(point0, point1);
             Handles.DrawLine(point2, point3);
             Handles.color = Color.white;
-
-            //Handles.DrawBezier(point0, point3, point1, point2, Color.white, Texture2D.whiteTexture, 1);
 
             Vector3 lineStart = curve.point0 + spline.transform.position;
             for (int j = 0; j <= linesPerCurve; j++)
