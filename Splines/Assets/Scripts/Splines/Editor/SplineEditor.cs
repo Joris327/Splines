@@ -2,9 +2,23 @@ using UnityEditor;
 using UnityEngine;
 
 [CustomEditor(typeof(Spline))]
-[CanEditMultipleObjects]
+//[CanEditMultipleObjects]
 public class SplineEditor : Editor
 {
+    //public VisualTreeAsset m_InspectorUXML;
+    // public override VisualElement CreateInspectorGUI()
+    // {
+    //     VisualElement container = new();
+        
+    //     if (m_InspectorUXML != null)
+    //      {
+    //         VisualElement uxmlContent = m_InspectorUXML.CloneTree();
+    //         container.Add(uxmlContent);
+    //      }
+        
+    //     return container;
+    // }
+    
     const float handleSize = 0.04f;
 	const float pickSize = 0.06f;
 	
@@ -12,12 +26,38 @@ public class SplineEditor : Editor
     
     static int linesPerCurve = 15;
     static bool showDirections = false;
+    static bool curvesFoldoutStatus = true;
 
     public override void OnInspectorGUI()
     {
         Spline spline = target as Spline;
         
-        DrawDefaultInspector();
+        SerializedProperty looping = serializedObject.FindProperty("looping");
+        EditorGUILayout.PropertyField(looping);
+        
+        SerializedProperty mirrored = serializedObject.FindProperty("mirrored");
+        EditorGUILayout.PropertyField(mirrored);
+        
+        //EditorGUILayout.PropertyField(serializedObject.FindProperty("curves"));
+        curvesFoldoutStatus = EditorGUILayout.Foldout(curvesFoldoutStatus, "Curves");
+        if (curvesFoldoutStatus)
+        {
+            SerializedProperty curves = serializedObject.FindProperty("curves");
+            
+            EditorGUI.indentLevel++;
+            GUI.enabled = false;
+            for (int i = 0; i < curves.arraySize; i++)
+            {
+                SerializedProperty curve = curves.GetArrayElementAtIndex(i);
+                EditorGUILayout.PropertyField(curve);
+            }
+            GUI.enabled = true;
+            EditorGUI.indentLevel--;
+        }
+        //EditorGUILayout.fold
+        //EditorGUILayout.BeginFoldoutHeaderGroup
+        
+        //DrawDefaultInspector();
         
         EditorGUILayout.Space();
         
@@ -30,7 +70,7 @@ public class SplineEditor : Editor
 
         if (GUILayout.Button("Add Curve"))
         {
-            spline.curves.Add(new(spline.curves.Count > 0 ? spline.curves[^1].points[^1] : new Vector3()));
+            spline.curves.Add(new(spline.curves.Count > 0 ? spline.curves[^1][3] : new Vector3()));
             SceneView.RepaintAll();
         }
         if (GUILayout.Button("Remove Curve") && spline.curves.Count > 0)
@@ -38,6 +78,8 @@ public class SplineEditor : Editor
             spline.curves.RemoveAt(spline.curves.Count - 1);
             SceneView.RepaintAll();
         }
+        
+        serializedObject.ApplyModifiedProperties();
     }
     
     void OnSceneGUI()
@@ -52,10 +94,10 @@ public class SplineEditor : Editor
         {
             BezierCurve curve = spline.curves[i];
 
-            Vector3 point0 = ShowPoint(0, i, spline, curve, handleTransform, handleRotation);
-            Vector3 point1 = ShowPoint(1, i, spline, curve, handleTransform, handleRotation);
-            Vector3 point2 = ShowPoint(2, i, spline, curve, handleTransform, handleRotation);
-            Vector3 point3 = ShowPoint(3, i, spline, curve, handleTransform, handleRotation);
+            Vector3 point0 = ShowPoint(0, i, spline, curve, handleRotation);
+            Vector3 point1 = ShowPoint(1, i, spline, curve, handleRotation);
+            Vector3 point2 = ShowPoint(2, i, spline, curve, handleRotation);
+            Vector3 point3 = ShowPoint(3, i, spline, curve, handleRotation);
 
             Handles.color = Color.grey;
             Handles.DrawLine(point0, point1);
@@ -64,7 +106,7 @@ public class SplineEditor : Editor
 
             //Handles.DrawBezier(point0, point3, point1, point2, Color.white, Texture2D.whiteTexture, 1);
 
-            Vector3 lineStart = curve.points[0] + spline.transform.position;
+            Vector3 lineStart = curve.point0 + spline.transform.position;
             for (int j = 0; j <= linesPerCurve; j++)
             {
                 //draw spline itself
@@ -76,7 +118,7 @@ public class SplineEditor : Editor
                 if (showDirections)
                 {
                     Handles.color = Color.green;
-                    Handles.DrawLine(lineEnd, lineEnd + curve.GetDirection(j / (float)linesPerCurve));
+                    Handles.DrawLine(lineEnd, lineEnd + curve.GetDirectionAt(j / (float)linesPerCurve));
                 }
                 
                 lineStart = lineEnd;
@@ -84,11 +126,11 @@ public class SplineEditor : Editor
         }
     }
     
-    
-    
-    Vector3 ShowPoint(int pointIndex, int curveIndex, Spline spline, BezierCurve curve, Transform handleTransform, Quaternion handleRotation)
+    Vector3 ShowPoint(int pointIndex, int curveIndex, Spline spline, BezierCurve curve, Quaternion handleRotation)
     {
-        Vector3 point = handleTransform.TransformPoint(curve.points[pointIndex]);
+        Transform splineTransform = spline.transform;
+        
+        Vector3 point = splineTransform.TransformPoint(curve[pointIndex]);
         Vector3 oldPoint = point;
         
         float size = HandleUtility.GetHandleSize(point);
@@ -99,51 +141,23 @@ public class SplineEditor : Editor
             selectedIndex = pointIndex + curveIndex * 4;
         }
         
-        if (selectedIndex != pointIndex + curveIndex * 4) return point;
-        
         if (Tools.current == Tool.Rotate)
         {
             if (pointIndex != 0 && pointIndex != 3) return point;
+            
             EditorGUI.BeginChangeCheck();
 
-            Vector3 direction = curve.GetDirection(pointIndex == 0 ? 0 : 1);
+            Vector3 direction = curve.GetDirectionAt(pointIndex == 0 ? 0 : 1);
             Quaternion currentRotation = Quaternion.AngleAxis(pointIndex == 0 ? curve.angles[0] : curve.angles[1], direction);
             Quaternion newRotation = Handles.Disc(currentRotation, point, direction, 1, false, 0);
 
             if (EditorGUI.EndChangeCheck())
             {
                 //undo
-                Undo.RecordObject(spline, "Rotate point");
+                //Undo.RecordObject(spline, "Rotate point");
                 EditorUtility.SetDirty(spline);
 
-                //calculate the new angle for the point
-                Quaternion check = Quaternion.AngleAxis(180, direction);
-                //Debug.Log(Quaternion.Dot(check, newRotation));
-                float newAngle = 0;
-
-                if (Quaternion.Dot(check, newRotation) > 0)
-                {
-                    newAngle = Quaternion.Angle(Quaternion.identity, newRotation);
-                }
-                else
-                {
-                    newAngle = -Quaternion.Angle(Quaternion.identity, newRotation);
-                }
-
-                //apply the new angle
-                curve.angles[pointIndex == 0 ? 0 : 1] = newAngle;
-
-                //adapt connecting points
-                if (pointIndex == 0)
-                {
-                    if (curveIndex == 0 && spline.Looping) spline.curves[^1].angles[^1] = newAngle;
-                    else if (curveIndex > 0) spline.curves[curveIndex - 1].angles[^1] = newAngle;
-                }
-                else //point index == 3
-                {
-                    if (curveIndex == spline.curves.Count - 1 && spline.Looping) spline.curves[0].angles[0] = newAngle;
-                    else if (curveIndex < spline.curves.Count - 1) spline.curves[curveIndex + 1].angles[0] = newAngle;
-                }
+                spline.RotatePointOnCurveTo(newRotation, curveIndex, pointIndex);
 
                 SplineMesh splineMesh = spline.GetComponent<SplineMesh>();
                 if (splineMesh && splineMesh.GenerateMeshOnEdit)
@@ -153,7 +167,10 @@ public class SplineEditor : Editor
                 }
             }
         }
-        else if (Tools.current == Tool.Move)
+        
+        if (selectedIndex != pointIndex + curveIndex * 4) return point;
+        
+        if (Tools.current == Tool.Move)
         {
             EditorGUI.BeginChangeCheck();
             
@@ -162,59 +179,8 @@ public class SplineEditor : Editor
             if (EditorGUI.EndChangeCheck())
             {
                 //Undo.RecordObject(spline, "Move point");
-                //EditorUtility.SetDirty(spline);
-                curve.points[pointIndex] = handleTransform.InverseTransformPoint(point);
-
-                if (pointIndex == 0 && curveIndex > 0) //move endpoint from previous curve to your position.
-                {
-                    spline.curves[curveIndex - 1].points[3] = handleTransform.InverseTransformPoint(point);
-                }
-                else if (pointIndex == 3 && curveIndex < spline.curves.Count - 1) //move startpoint from next curve to your position.
-                {
-                    spline.curves[curveIndex + 1].points[0] = handleTransform.InverseTransformPoint(point);
-                }
-                else if (spline.Looping) //if looping: move point at the other end of spline to your position.
-                {
-                    if (curveIndex == 0 && pointIndex == 0) spline.curves[^1].points[3] = handleTransform.InverseTransformPoint(point);
-                    else if (curveIndex == spline.curves.Count - 1 && pointIndex == 3) spline.curves[0].points[0] = handleTransform.InverseTransformPoint(point);
-                }
-
-                if (spline.Mirrored)
-                {
-                    Vector3 pointDiff = point - oldPoint;
-                    Vector3 oppositePos;
-
-                    switch (pointIndex)
-                    {
-                        case 0:
-                            curve.points[1] += pointDiff;
-
-                            if (curveIndex > 0) spline.curves[curveIndex - 1].points[2] += pointDiff;
-                            else if (spline.Looping && curveIndex == 0) spline.curves[^1].points[2] += pointDiff;
-                            break;
-
-                        case 1:
-                            oppositePos = (curve.points[0] - curve.points[1]) * 2 + curve.points[1];
-
-                            if (spline.Looping && curveIndex == 0) spline.curves[^1].points[2] = oppositePos;
-                            else if (curveIndex > 0) spline.curves[curveIndex - 1].points[2] = oppositePos;
-                            break;
-
-                        case 2:
-                            oppositePos = (curve.points[3] - curve.points[2]) * 2 + curve.points[2];
-
-                            if (spline.Looping && curveIndex == spline.curves.Count - 1) spline.curves[0].points[1] = oppositePos;
-                            else if (curveIndex < spline.curves.Count - 1) spline.curves[curveIndex + 1].points[1] = oppositePos;
-                            break;
-
-                        case 3:
-                            curve.points[2] += pointDiff;
-
-                            if (curveIndex < spline.curves.Count - 1) spline.curves[curveIndex + 1].points[1] += pointDiff;
-                            else if (spline.Looping && curveIndex == spline.curves.Count - 1) spline.curves[0].points[1] += pointDiff;
-                            break;
-                    }
-                }
+                EditorUtility.SetDirty(spline);
+                spline.MovePointOnCurveTo(splineTransform.InverseTransformPoint(point), curveIndex, pointIndex);
 
                 SplineMesh splineMesh = spline.GetComponent<SplineMesh>();
                 if (splineMesh && splineMesh.GenerateMeshOnEdit)

@@ -3,13 +3,48 @@ using UnityEngine;
 [System.Serializable]
 public class BezierCurve
 {
-    public Vector3[] points = {
-        new(0, 0, 0), new(1, 0, 0), new(2, 0, 0), new(3, 0, 0)
-    };
+    // Vector3[] points = {
+    //     new(0, 0, 0), new(1, 0, 0), new(2, 0, 0), new(3, 0, 0)
+    // };
+    
+    public Vector3 this[int index]
+    {
+        //get => points[index];
+        //set => points[index] = value;
+        get
+        {
+            return index switch
+            {
+                0 => point0,
+                1 => point1,
+                2 => point2,
+                3 => point3,
+                _ => throw new System.IndexOutOfRangeException()
+            };
+        }
+        set
+        {
+            switch (index)
+            {
+                case 0: point0 = value; break;
+                case 1: point1 = value; break;
+                case 2: point2 = value; break;
+                case 3: point3 = value; break;
+                default: throw new System.IndexOutOfRangeException();
+            }
+        }
+    }
+    
+    public Vector3 point0 = new();
+    public Vector3 point1 = new(1, 0, 0);
+    public Vector3 point2 = new(2, 0, 0);
+    public Vector3 point3 = new(3, 0, 0);
 
-    public float[] angles = {
-        new(), new()
-    };
+    // [NonReorderable] public float[] angles = {
+    //     new(), new()
+    // };
+    
+    public CurveAngles angles = new();
 
     [SerializeField] int distanceSamplesAmount = 10;
 
@@ -39,21 +74,30 @@ public class BezierCurve
 
     public BezierCurve(Vector3 pPoint0, Vector3 pPoint1, Vector3 pPoint2, Vector3 pPoint3)
     {
-        points[0] = pPoint0;
-        points[1] = pPoint1;
-        points[2] = pPoint2;
-        points[3] = pPoint3;
+        point0 = pPoint0;
+        point1 = pPoint1;
+        point2 = pPoint2;
+        point3 = pPoint3;
+        
+        // angles = new float[] {
+        //     0, 0
+        // };
     }
 
     public BezierCurve(Vector3 anchor)
     {
-        points = new Vector3[] {
-            anchor, anchor + new Vector3(1, 0, 0), anchor + new Vector3(2, 0, 0), anchor + new Vector3(3, 0, 0)
-        };
+        // points = new Vector3[] {
+        //     anchor, anchor + new Vector3(1, 0, 0), anchor + new Vector3(2, 0, 0), anchor + new Vector3(3, 0, 0)
+        // };
+        
+        point0 = anchor + new Vector3(0, 0, 0);
+        point1 = anchor + new Vector3(1, 0, 0);
+        point2 = anchor + new Vector3(2, 0, 0);
+        point3 = anchor + new Vector3(3, 0, 0);
 
-        angles = new float[] {
-            0, 0
-        };
+        // angles = new float[] {
+        //     0, 0
+        // };
     }
 
     /// <summary>
@@ -69,7 +113,7 @@ public class BezierCurve
     /// <summary>
     /// Normalized velocity.
     /// </summary>
-    public Vector3 GetDirection(float t)
+    public Vector3 GetDirectionAt(float t)
     {
         return GetVelocity(t).normalized;
     }
@@ -120,10 +164,10 @@ public class BezierCurve
     {
         Vector4 polynomial = characteristicMatrix * powersOfT;
 
-        Vector4 worldPoint0 = new(points[0].x, points[0].y, points[0].z);
-        Vector4 worldPoint1 = new(points[1].x, points[1].y, points[1].z);
-        Vector4 worldPoint2 = new(points[2].x, points[2].y, points[2].z);
-        Vector4 worldPoint3 = new(points[3].x, points[3].y, points[3].z);
+        Vector4 worldPoint0 = new(point0.x, point0.y, point0.z);
+        Vector4 worldPoint1 = new(point1.x, point1.y, point1.z);
+        Vector4 worldPoint2 = new(point2.x, point2.y, point2.z);
+        Vector4 worldPoint3 = new(point3.x, point3.y, point3.z);
 
         Matrix4x4 pointMatrix = new(worldPoint0, worldPoint1, worldPoint2, worldPoint3);
 
@@ -187,3 +231,56 @@ public class BezierCurve
         return Mathf.Lerp(minDistance, maxDistance, midPoint);
     }
 }
+
+//#if UNITY_EDITOR
+// [CustomPropertyDrawer(typeof(BezierCurve))]
+// public class BezierCurveDrawerUIE : PropertyDrawer
+// {
+//     public override VisualElement CreatePropertyGUI(SerializedProperty property)
+//     {
+//         var container = new VisualElement();
+        
+//         //container.Add(new PropertyField(property.FindPropertyRelative("points"), "Test"));
+//         container.Add(new PropertyField(property.FindPropertyRelative("point0")));
+//         container.Add(new PropertyField(property.FindPropertyRelative("point1")));
+//         container.Add(new PropertyField(property.FindPropertyRelative("point2")));
+//         container.Add(new PropertyField(property.FindPropertyRelative("point3")));
+//         container.Add(new PropertyField(property.FindPropertyRelative("angles")));
+        
+//         return container;
+//     }
+// }
+
+// [CustomPropertyDrawer(typeof(BezierCurve))]
+// public class BezierCurveDrawer : PropertyDrawer
+// {
+//     public override void OnGUI(Rect position, SerializedProperty property, GUIContent label)
+//     {
+//         // Using BeginProperty / EndProperty on the parent property means that
+//         // prefab override logic works on the entire property.
+//         EditorGUI.BeginProperty(position, label, property);
+        
+//         // Draw label
+//         position = EditorGUI.PrefixLabel(position, GUIUtility.GetControlID(FocusType.Passive), label);
+        
+//         // Don't make child fields be indented
+//         int indent = EditorGUI.indentLevel;
+//         EditorGUI.indentLevel = 0;
+
+//         // Calculate rects
+//         Rect position1 = new(position.x, position.y + 30, position.width, position.height);
+//         Rect position2 = new(position.x, position.y + 60, position.width, position.height);
+//         Rect position3 = new(position.x, position.y + 90, position.width, position.height);
+//         //Rect unitRect = new(position.x + 35, position.y, 50, position.height);
+//         //Rect nameRect = new(position.x + 90, position.y, position.width - 90, position.height);
+        
+//         EditorGUI.PropertyField(position,  property.FindPropertyRelative("point0"));
+//         EditorGUI.PropertyField(position1, property.FindPropertyRelative("point1"));
+//         EditorGUI.PropertyField(position2, property.FindPropertyRelative("point2"));
+//         EditorGUI.PropertyField(position3, property.FindPropertyRelative("point3"));
+        
+//         EditorGUI.indentLevel = indent;
+//         EditorGUI.EndProperty();
+//     }
+// }
+// #endif

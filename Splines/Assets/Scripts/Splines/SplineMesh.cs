@@ -3,14 +3,13 @@ using System.Linq;
 using UnityEngine;
 
 [RequireComponent(typeof(Spline))]
-[RequireComponent(typeof(MeshFilter))]
-[RequireComponent(typeof(MeshRenderer))]
 public class SplineMesh : MonoBehaviour
 {
     Spline spline;
-    MeshFilter meshFilter;
-    MeshRenderer meshRenderer;
-
+    // MeshFilter meshFilter;
+    // MeshRenderer meshRenderer;
+    
+    [SerializeField] MeshFilter meshObjectPrefab;
     public PhysicsMaterial physicsMaterial;
     /// <summary>
     /// Vertexes per metre
@@ -19,6 +18,15 @@ public class SplineMesh : MonoBehaviour
     [SerializeField] float roadWidth = 1;
     
     public bool GenerateMeshOnEdit = false;
+    
+    List<Vector3> leftVertices = new();
+    List<Vector3> rightVertexes = new();
+    List<Vector2> leftUVs = new();
+    List<Vector2> rightUVs = new();
+    
+    List<Vector3> vertices = new();
+    List<Vector2> newUVs = new();
+    List<int> triangles = new();
 
     void Awake()
     {
@@ -28,8 +36,8 @@ public class SplineMesh : MonoBehaviour
     public void SetComponentReferences()
     {
         if (!TryGetComponent(out spline)) Debug.LogError(name + ": could not find Spline component.");
-        if (!TryGetComponent(out meshFilter)) Debug.LogError(name + ": could not find MeshFilter component.");
-        if (!TryGetComponent(out meshRenderer)) Debug.LogError(name + ": could find MeshRenderer component.");
+        // if (!TryGetComponent(out meshFilter)) Debug.LogError(name + ": could not find MeshFilter component.");
+        // if (!TryGetComponent(out meshRenderer)) Debug.LogError(name + ": could find MeshRenderer component.");
     }
 
     public void GenerateMesh()
@@ -37,7 +45,7 @@ public class SplineMesh : MonoBehaviour
         GenerateNonOverlappingMesh();
     }
     
-    void GenerateSimpleMesh()
+    void GenerateSimpleMesh(int curveIndex)
     {
         List<Vector3> vertices = new();
         List<Vector2> newUVs = new();
@@ -101,105 +109,132 @@ public class SplineMesh : MonoBehaviour
             triangles.Add(vertices.Count - 1);
         }
 
+        MeshFilter meshFilter = Instantiate(meshObjectPrefab, transform);
         meshFilter.sharedMesh.Clear();
         meshFilter.sharedMesh = new()
         {
-            name = "Spline Mesh",
+            name = "Spline Mesh " + curveIndex,
             vertices = vertices.ToArray(),
             uv = newUVs.ToArray(),
             triangles = triangles.ToArray()
         };
-
-        if (!meshRenderer.sharedMaterial) meshRenderer.sharedMaterial = new(Shader.Find("Universal Render Pipeline/Lit"));
         meshFilter.sharedMesh.RecalculateNormals();
     }
 
-    float Distance(Vector3 a, Vector3 b)
+    bool IsVertexPlacementValid(Vector3 vertex, Vector3 p1, Vector3 p2, float stepDistance)
     {
-        return (a - b).magnitude;
-    }
-    
-    bool FarEnoughFromEveryone(Vector3 subject, List<Vector3> vectors, Vector3 extra, float distance)
-    {
-        if ((subject - extra).magnitude <= distance) return false;
-
-        foreach (Vector3 v in vectors)
-        {
-            if ((subject - v).magnitude <= distance) return false;
-        }
-
+        if ((vertex - p1).magnitude < stepDistance) return false;
+        if ((vertex - p2).magnitude < stepDistance) return false;
         return true;
     }
     
     public void GenerateNonOverlappingMesh()
     {
-        List<Vector3> leftVertices = new();
-        List<Vector3> rightVertexes = new();
-        List<Vector2> leftUVs = new();
-        List<Vector2> rightUVs = new();
-        
-        List<Vector3> vertices = new();
-        List<Vector2> newUVs = new();
-        List<int> triangles = new();
-
-        for (int i = 0; i < 1/*spline.curves.Count*/; i++)
+        for (int i = transform.childCount - 1; i >= 0; i--)
         {
-            BezierCurve curve = spline.curves[i];
-
-            Vector3 normal = Vector3.Cross(curve.GetDirection(0), Vector3.up).normalized;
-            Vector3 centrePoint = curve.CalculatePointOnCurve(0);
-
-            leftVertices.Add(centrePoint - (normal * roadWidth));
-            rightVertexes.Add(centrePoint + (normal * roadWidth));
-
-            leftUVs.Add(new Vector2(0, 0));
-            rightUVs.Add(new Vector2(1, 0));
-            
-            normal = Vector3.Cross(curve.GetDirection(1), Vector3.up).normalized;
-            centrePoint = curve.CalculatePointOnCurve(1);
-
-            Vector3 lastLeftVertex = centrePoint - (normal * roadWidth);
-            Vector3 lastRightVertex = centrePoint + (normal * roadWidth);
-
-            float curveLength = curve.ArcLength;
-            int stepAmount = (int)(curveLength * vertexDensity);
-            float stepDistance = curveLength / stepAmount;
-
-            for (int j = 1; j < stepAmount; j++)
-            {
-                float t = j / (float)stepAmount;
-
-                normal = Vector3.Cross(curve.GetDirection(t), Vector3.up).normalized;
-                centrePoint = curve.CalculatePointOnCurve(t);
-
-                Vector3 newLeftVertex = centrePoint - (normal * roadWidth);
-                Vector3 newRightVertex = centrePoint + (normal * roadWidth);
-
-                if (Distance(newLeftVertex, leftVertices[^1]) >= stepDistance //not too close to previous vertex
-                 && Distance(newLeftVertex, leftVertices[0]) > stepDistance //not too close to first vertex (prevent overlap)
-                 && Distance(newLeftVertex, lastLeftVertex) > stepDistance) //not too close to last vertex (prevent overlap)
-                //if (FarEnoughFromEveryone(newLeftVertex, leftVertices, lastLeftVertex, stepDistance))
-                {
-                    leftVertices.Add(newLeftVertex);
-                    leftUVs.Add(new Vector2(0, t));
-                }
-                if (Distance(newRightVertex, rightVertexes[^1]) >= stepDistance
-                 && Distance(newRightVertex, rightVertexes[0]) > stepDistance
-                 && Distance(newRightVertex, lastRightVertex) > stepDistance)
-                //if (FarEnoughFromEveryone(newRightVertex, rightVertexes, lastRightVertex, stepDistance))
-                {
-                    rightVertexes.Add(newRightVertex);
-                    rightUVs.Add(new Vector2(1, t));
-                }
-            }
-            
-            leftVertices.Add(lastLeftVertex);
-            rightVertexes.Add(lastRightVertex);
-            
-            leftUVs.Add(new Vector2(0, 1));
-            rightUVs.Add(new Vector2(1, 1));
+            GameObject child = transform.GetChild(i).gameObject;
+            DestroyImmediate(child);
         }
         
+        for (int i = 0; i < spline.curves.Count; i++)
+        {
+            leftVertices.Clear();
+            rightVertexes.Clear();
+            leftUVs.Clear();
+            rightUVs.Clear();
+            
+            vertices.Clear();
+            newUVs.Clear();
+            triangles.Clear();
+            
+            GenerateVerteces(spline.curves[i]);
+            TriangulateVerteces(i);
+        }
+        
+        leftVertices.Clear();
+        rightVertexes.Clear();
+        leftUVs.Clear();
+        rightUVs.Clear();
+        
+        vertices.Clear();
+        newUVs.Clear();
+        triangles.Clear();
+    }
+    
+    void GenerateVerteces(BezierCurve curve)
+    {
+        float curveLength = curve.ArcLength;
+        int stepAmount = (int)(curveLength * vertexDensity);
+        float stepDistance = curveLength / stepAmount;
+        
+        AddVerteces(0, stepDistance, curve, Vector3.zero, Vector3.zero, true);
+        
+        //pre-calculate the vector positions of the final 2 vectors, so that while generating we can check no verteces get too close
+        Vector3 endCentrePoint = curve.CalculatePointOnCurve(1);
+        float endSmoothedT = -(Mathf.Cos(Mathf.PI * 1) - 1) / 2; //map the linear progression of the t variable to an S curve
+        float endInterpolatedAngle = Mathf.LerpAngle(curve.angles[0], curve.angles[1], endSmoothedT); //will be used to angle the road surface to this value
+        Vector3 endDirection = curve.GetDirectionAt(1);
+        Vector3 endPointNormal = Vector3.Cross(endDirection, Vector3.up).normalized;
+        endPointNormal = Quaternion.AngleAxis(endInterpolatedAngle, endDirection) * endPointNormal;
+        
+        Vector3 endLeftVertex = endCentrePoint - (endPointNormal * roadWidth);
+        Vector3 endRightVertex = endCentrePoint + (endPointNormal * roadWidth);
+        //---
+
+        for (int j = 1; j < stepAmount; j++)
+        {
+            float t = j / (float)stepAmount;
+
+            AddVerteces(t, stepDistance, curve, endLeftVertex, endRightVertex, true);
+        }
+        
+        leftVertices.Add(endLeftVertex);
+        rightVertexes.Add(endRightVertex);
+        
+        leftUVs.Add(new Vector2(0, 1));
+        rightUVs.Add(new Vector2(1, 1));
+    }
+    
+    void AddVerteces(float t, float stepDistance, BezierCurve curve, Vector3 endLeftVertex, Vector3 endRightVertex, bool skipVertexCheck = false)
+    {
+        t = Mathf.Clamp01(t);
+        
+        Vector3 centrePoint = curve.CalculatePointOnCurve(t);
+        
+        float smoothedT = -(Mathf.Cos(Mathf.PI * t) - 1) / 2; //map the linear progression of the t variable to an S curve
+        float interpolatedAngle = Mathf.LerpAngle(curve.angles[0], curve.angles[1], smoothedT); //will be used to angle the road surface to this value
+        
+        Vector3 direction = curve.GetDirectionAt(t);
+        Vector3 normal = Vector3.Cross(direction, Vector3.up).normalized;
+        normal = Quaternion.AngleAxis(interpolatedAngle, direction) * normal;
+        
+        Vector3 newLeftVertex = centrePoint - (normal * roadWidth);
+        Vector3 newRightVertex = centrePoint + (normal * roadWidth);
+        
+        if (skipVertexCheck)
+        {
+            leftVertices.Add(newLeftVertex);
+            leftUVs.Add(new Vector2(0, t));
+            
+            rightVertexes.Add(newRightVertex);
+            rightUVs.Add(new Vector2(1, t));
+            return;
+        }
+        
+        if (IsVertexPlacementValid(newLeftVertex, leftVertices[^1], endLeftVertex, stepDistance))
+        {
+            leftVertices.Add(newLeftVertex);
+            leftUVs.Add(new Vector2(0, t));
+        }
+        if (IsVertexPlacementValid(newRightVertex, rightVertexes[^1], endRightVertex, stepDistance))
+        {
+            rightVertexes.Add(newRightVertex);
+            rightUVs.Add(new Vector2(1, t));
+        }
+    }
+    
+    void TriangulateVerteces(int curveIndex)
+    {
         float vertexRatio;
 
         //add triangles
@@ -228,9 +263,11 @@ public class SplineMesh : MonoBehaviour
                     triangles.Add(currentOppositeIndex + oppositeListStartIndex-1);
                     triangles.Add(j);
                 }
-                
-                //Debug.Log(j + " - " + currentOppositeIndex + " - " + triangles.Count);
             }
+            
+            triangles.Add(oppositeListStartIndex-1);
+            triangles.Add(vertices.Count-1);
+            triangles.Add(vertices.Count-2);
         }
         else
         {
@@ -254,30 +291,22 @@ public class SplineMesh : MonoBehaviour
                     triangles.Add(currentOppositeIndex + oppositeListStartIndex);
                     triangles.Add(j);
                 }
-                
-                //Debug.Log(j + " - " + currentOppositeIndex + " - " + triangles.Count);
             }
+            
+            triangles.Add(oppositeListStartIndex-1);
+            triangles.Add(vertices.Count-2);
+            triangles.Add(vertices.Count-1);
         }
-
-        //Debug.Log("------------");
-        //Debug.Log(vertexRatio);
-
         
-        
-        //Debug.Log(leftVertices.Count + " - " + rightVertexes.Count);
-        //Debug.Log(vertices.Count + " - " + newUVs.Count);
-        //Debug.Log(triangles.Count);
-        
-        meshFilter.sharedMesh.Clear();
+        MeshFilter meshFilter = Instantiate(meshObjectPrefab, transform);
+        if (meshFilter.sharedMesh) meshFilter.sharedMesh.Clear();
         meshFilter.sharedMesh = new()
         {
-            name = "Spline Mesh",
+            name = "Spline Mesh " + curveIndex,
             vertices = vertices.ToArray(),
             uv = newUVs.ToArray(),
             triangles = triangles.ToArray()
         };
-
-        if (!meshRenderer.sharedMaterial) meshRenderer.sharedMaterial = new(Shader.Find("Universal Render Pipeline/Lit"));
         meshFilter.sharedMesh.RecalculateNormals();
     }
     
@@ -286,7 +315,7 @@ public class SplineMesh : MonoBehaviour
         progress = Mathf.Clamp01(progress);
         progress = -(Mathf.Cos(Mathf.PI * progress) - 1) / 2; //smooth out the curve
         
-        Vector3 direction = curve.GetDirection(progress);
+        Vector3 direction = curve.GetDirectionAt(progress);
         
         float interpolatedAngle = Mathf.LerpAngle(curve.angles[0], curve.angles[1], progress); //will be used to angle the road surface to this value
         
