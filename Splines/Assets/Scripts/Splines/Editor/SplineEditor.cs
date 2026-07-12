@@ -142,8 +142,7 @@ public class SplineEditor : Editor
                 SplineMesh splineMesh = spline.GetComponent<SplineMesh>();
                 if (splineMesh && splineMesh.GenerateMeshOnEdit)
                 {
-                    splineMesh.SetComponentReferences();
-                    splineMesh.GenerateMesh();
+                    splineMesh.GenerateMesh(spline);
                 }
             }
         }
@@ -165,8 +164,7 @@ public class SplineEditor : Editor
                 SplineMesh splineMesh = spline.GetComponent<SplineMesh>();
                 if (splineMesh && splineMesh.GenerateMeshOnEdit)
                 {
-                    splineMesh.SetComponentReferences();
-                    splineMesh.GenerateMesh();
+                    splineMesh.GenerateMesh(spline);
                 }
 
                 curve.CalculateDistanceLUT();
