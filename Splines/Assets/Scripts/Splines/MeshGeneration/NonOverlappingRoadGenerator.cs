@@ -80,7 +80,7 @@ public class NonOverlappingRoadGenerator : SplineMeshGenerator
         {
             float t = j / (float)stepAmount;
 
-            AddVerteces(t, stepDistance, curve, endLeftVertex, endRightVertex, true);
+            AddVerteces(t, stepDistance, curve, endLeftVertex, endRightVertex);
         }
         
         leftVertices.Add(endLeftVertex);
@@ -96,8 +96,10 @@ public class NonOverlappingRoadGenerator : SplineMeshGenerator
         
         Vector3 centrePoint = curve.CalculatePointOnCurve(t);
         
-        float smoothedT = -(Mathf.Cos(Mathf.PI * t) - 1) / 2; //map the linear progression of the t variable to an S curve
-        float interpolatedAngle = Mathf.LerpAngle(curve.angles[0], curve.angles[1], smoothedT); //will be used to angle the road surface to this value
+        //map the linear progression of the t variable to an S curve
+        float smoothedT = -(Mathf.Cos(Mathf.PI * t) - 1) / 2; 
+        //will be used to angle the road surface to this value
+        float interpolatedAngle = Mathf.LerpAngle(curve.angles[0], curve.angles[1], smoothedT); 
         
         Vector3 direction = curve.GetDirectionAt(t);
         Vector3 normal = Vector3.Cross(direction, Vector3.up).normalized;
